@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="../扩展/template.web.js"></script>
+    <script src="../扩展/jquery.min.js"></script>
+</head>
+<body>
+    <input type="text" id="ipt">
+    <button>搜索</button>
+    <div id="suggest-list"></div>
+
+
+
+     <!-- 模板结构 -->
+ <script type="text/html" id="tpl-suggestList">
+    {{each result}}
+       <div class="suggest-item">{{$value[0]}}</div>
+    {{/each}}
+ </script>
+
+
+
+ 
+    <script>
+        $(function(){
+            //定义延时器的ID
+            var timer=null;
+            //定义缓存对象
+            var cacheObj={};
+            //定义防抖函数
+            function debounceSearch(kw){
+                timer=setTimeout(function(){
+                    getSuggestList(kw)
+                },500);
+            }
+
+            $('#ipt').on('keyup',function(){
+                //清空timer
+                clearTimeout(timer)
+                var keywords=$(this).val().trim();
+                if(keywords.length<=0){
+                    return $('#suggest-list').empty().hide();
+                }
+
+                //先判断缓存有数据
+                if(cacheObj[keywords]){
+                    return renderSuggestList(cacheObj[keywords]);
+                }
+
+                //获取前搜索内容
+                // console.log(keywords);
+                // getSuggestList(keywords);
+                debounceSearch(keywords);
+            })
+
+            function getSuggestList(kw){
+                $.ajax({
+                    url:'http://suggest.taobao.com/sug?q='+kw,
+                    dataType:'jsonp',
+                    success:function(res){
+                        // console.log(res);
+                        renderSuggestList(res);
+                    }
+                });
+            }
+
+            //渲染UI结构
+            function renderSuggestList(res){
+                if(res.result.length<=0){
+                    return $('#suggest-list').empty().hide();
+                }
+                var htmlStr=template('tpl-suggestList',res);
+                $('#suggest-list').html(htmlStr).show();
+
+                //获取前用户输入的内容，当做键
+                var k=$('#ipt').val().trim();
+                //需要将数据作为值进行缓存
+                cacheObj[k]=res;
+            }
+        })
+    </script>
+</body>
+</html>
